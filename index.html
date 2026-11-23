@@ -68,7 +68,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 </head>
 <body>
 <h1>🍟 ノンフライヤー早見表</h1>
-<p class="m">COSORI CAF-L501-KJP ・ 目安です。商品袋の表示があればそちらを優先</p>
+<p class="m">COSORI CAF-L501-KJP ・ 目安です。商品袋の表示があればそちらを優先 <span id="sy"></span></p>
 <input id="q" type="search" placeholder="食品名で検索（例：唐揚げ、ポテト）">
 <div class="tabs" id="tabs"></div>
 <div class="bar2"><select id="so"><option value="def">並び順：標準</option><option value="name">名前順（あいうえお）</option><option value="temp">温度が低い順</option><option value="temp2">温度が高い順</option><option value="time">時間が短い順</option><option value="time2">時間が長い順</option></select><button id="ad">＋ 食品を追加</button><button id="ac">＋ カテゴリー</button></div>
@@ -102,7 +102,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 ・時間は<b>目安</b>です。機種・量・厚みで変わるので、最初は短めにして様子を見てください。<br>
 ・「途中で返す」「ゆする」は、時間の半分くらいで一度引き出しを出します。<br>
 ・生の肉は中心まで75℃で1分以上（切って肉汁が透明か確認）。<br>
-・✎で家庭用に温度・時間を書き換えられます。「＋食品を追加」「＋カテゴリー」で自分の食品や分類も登録できます（この端末のこのページに保存）。写真は書き出しの対象外です。<br>
+・✎で家庭用に温度・時間を書き換えられます。「＋食品を追加」「＋カテゴリー」で自分の食品や分類も登録できます（この端末のこのページに保存）。写真・お気に入りは書き出しの対象外です。編集・追加・カテゴリーは家族の端末と自動で共有されます。<br>
 ・「実食記録」は業スー商品をノンフライヤーで調理した記事（COSORI 6L使用）の数値、「実例」はメーカーや店舗の商品を実際に調理した例、「目安」は一般的な推定値です。
 </div>
 
@@ -178,7 +178,8 @@ const CATS=[["all","すべて"],["fav","★ お気に入り"],["gyomu","業務�
 let cat="all",qs="",mem={};
 const $=s=>document.querySelector(s);
 function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return mem[k]!==undefined?mem[k]:d}}
-function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let quiet=false;
+function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"))setTimeout(sync,300)}
 let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pend,so="def";const all=()=>D.concat(cu);
 const val=r=>{const o=ov[r[0]];return o?{t:o.t,a:o.a,b:o.b,c:1}:{t:r[3],a:r[4],b:r[5],c:0}};
 function tabs(){$("#tabs").innerHTML=CATS.concat(cc).map(c=>`<button data-c="${c[0]}" class="${c[0]===cat?"on":""}">${c[1]}</button>`).join("")}
@@ -275,6 +276,43 @@ $("#cl").onclick=e=>{const id=e.target.dataset.d;if(!id)return;
   if(cu.some(x=>x[1]===id)){$("#er2").textContent="この分類に食品があります。先に別の分類へ移すか削除してください";return}
   cc=cc.filter(c=>c[0]!==id);sv("cc",cc);if(cat===id)cat="all";cList();tabs();render()};
 tabs();render();
+
+// ---- Firebase 共有 ----
+const FB="https://airfryer-be7d1-default-rtdb.firebaseio.com/af";
+let last=null,busy=false,again=false;
+const st=o=>JSON.stringify(o,(k,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);
+const snap=()=>({ov:JSON.parse(JSON.stringify(ov)),cu:Object.fromEntries(cu.map(x=>[x[0],{c:x[1],n:x[2],t:x[3],a:x[4],b:x[5],f:x[6]?1:0,m:x[7]||""}])),cc:Object.fromEntries(cc.map(c=>[c[0],c[1]]))});
+const setSy=(t,c)=>{const e=$("#sy");e.textContent=t;e.style.color=c||"var(--sub)"};
+function diff(a,b){const o={};for(const k of["ov","cu","cc"]){const x=a[k]||{},y=b[k]||{};
+  for(const id in x){if(st(x[id])!==st(y[id]))o[k+"/"+id]=x[id]}
+  for(const id in y){if(!(id in x))o[k+"/"+id]=null}}return o}
+const byId=(p,q)=>(parseInt(p[0].slice(1))||0)-(parseInt(q[0].slice(1))||0);
+function apply(r){const before=st(snap());quiet=true;
+  ov=r.ov||{};
+  cu=Object.entries(r.cu||{}).sort(byId).map(([k,o])=>[k,o.c,o.n,o.t,o.a,o.b,o.f?1:0,o.m||"",2]);
+  cc=Object.entries(r.cc||{}).sort(byId).map(([k,n])=>[k,n]);
+  sv("ov",ov);sv("cu",cu);sv("cc",cc);quiet=false;
+  if(before!==st(snap())){if(cat!=="all"&&cat!=="fav"&&!(cat in CN()))cat="all";tabs();
+    if(!document.querySelector(".mask.show"))render()}}
+async function sync(){
+  if(busy){again=true;return}busy=true;setSy("☁ 同期中…");
+  try{
+    const g=await fetch(FB+".json");if(!g.ok)throw g.status;
+    const rem=await g.json()||{};rem.ov=rem.ov||{};rem.cu=rem.cu||{};rem.cc=rem.cc||{};
+    if(last===null){let mig=false;try{mig=localStorage.getItem("fbmig")==="1"}catch(e){}
+      if(!mig){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}})}else apply(rem);
+      last=rem}
+    else if(!Object.keys(diff(snap(),last)).length&&st(rem)!==st(last)){apply(rem);last=rem}
+    const d=diff(snap(),last);
+    if(Object.keys(d).length){const p=await fetch(FB+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!p.ok)throw p.status;last=snap()}
+    try{localStorage.setItem("fbmig","1")}catch(e){}
+    setSy("☁ 共有OK","var(--ok)")
+  }catch(e){setSy("☁ 共有できません（この端末のみ保存）","#e03131")}
+  busy=false;if(again){again=false;setTimeout(sync,300)}
+}
+setInterval(sync,15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
+sync();
 </script>
 </body>
 </html>
