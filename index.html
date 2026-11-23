@@ -63,7 +63,6 @@ h1{font-size:19px;margin:6px 2px 2px}
 .pvw{display:none;width:100%;max-height:160px;object-fit:contain;border-radius:10px;margin-top:8px;background:var(--bg)}
 #big{max-width:100%;max-height:85vh;border-radius:12px}
 .dlg .ph0{display:none;width:100%;margin-top:6px;padding:9px;font-size:13px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
-.lk{margin-top:8px}.lk a{display:inline-block;font-size:13px;color:var(--ac);text-decoration:none;border:1px solid var(--bd);border-radius:999px;padding:6px 12px;background:var(--bg)}
 </style>
 </head>
 <body>
@@ -102,7 +101,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 ・時間は<b>目安</b>です。機種・量・厚みで変わるので、最初は短めにして様子を見てください。<br>
 ・「途中で返す」「ゆする」は、時間の半分くらいで一度引き出しを出します。<br>
 ・生の肉は中心まで75℃で1分以上（切って肉汁が透明か確認）。<br>
-・✎で家庭用に温度・時間を書き換えられます。「＋食品を追加」「＋カテゴリー」で自分の食品や分類も登録できます（この端末のこのページに保存）。写真・お気に入りは書き出しの対象外です。編集・追加・カテゴリーは家族の端末と自動で共有されます。<br>
+・✎で家庭用に温度・時間を書き換えられます。「＋食品を追加」「＋カテゴリー」で自分の食品や分類も登録できます（この端末のこのページに保存）。お気に入りは端末ごと・書き出しの対象外です。編集・追加・カテゴリー・写真は家族の端末と自動で共有されます。<br>
 ・「実食記録」は業スー商品をノンフライヤーで調理した記事（COSORI 6L使用）の数値、「実例」はメーカーや店舗の商品を実際に調理した例、「目安」は一般的な推定値です。
 </div>
 
@@ -179,21 +178,19 @@ let cat="all",qs="",mem={};
 const $=s=>document.querySelector(s);
 function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return mem[k]!==undefined?mem[k]:d}}
 let quiet=false;
-function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"))setTimeout(sync,300)}
-let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pend,so="def";const all=()=>D.concat(cu);
+function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"||k==="pq"||k==="pdel"))setTimeout(sync,300)}
+let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pv=ld("pv",{}),pq=ld("pq",{}),pdel=ld("pdel",[]),pend,so="def";const all=()=>D.concat(cu);
 const val=r=>{const o=ov[r[0]];return o?{t:o.t,a:o.a,b:o.b,c:1}:{t:r[3],a:r[4],b:r[5],c:0}};
 function tabs(){$("#tabs").innerHTML=CATS.concat(cc).map(c=>`<button data-c="${c[0]}" class="${c[0]===cat?"on":""}">${c[1]}</button>`).join("")}
 const BC={gyomu:"業務スーパー",deli:"惣菜",frozen:"冷凍食品",meat:"肉・魚"};
 const ORD=()=>Object.keys(BC).concat(cc.map(c=>c[0])),CN=()=>Object.assign({},BC,Object.fromEntries(cc));
 function srt(rs){if(so==="def")return rs;const k=r=>{const v=val(r);return so.startsWith("name")?r[2]:so.startsWith("temp")?v.t:v.a};
   const d=so.endsWith("2")?-1:1;return rs.slice().sort((x,y)=>{const p=k(x),q=k(y);return (typeof p==="string"?p.localeCompare(q,"ja"):p-q)*d})}
-function qurl(r){const q=r[2]+(r[1]==="gyomu"&&!r[2].includes("業務スーパー")?" 業務スーパー":"");return "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(q)}
 function card(r){const v=val(r),f=favs.includes(r[0]);
   const time=v.a===v.b?`${v.a}分`:`${v.a}〜${v.b}分`;
   return `<div class="card"><div class="top"><div class="tl">${pic(r[0])?`<img class="pi" data-p="${r[0]}" src="${pic(r[0])}" alt="">`:""}<div class="nm">${esc(r[2])}</div></div><div class="acts"><button class="ed" data-e="${r[0]}">✎</button><button class="fav ${f?"on":""}" data-f="${r[0]}">${f?"★":"☆"}</button></div></div>
   <div class="big"><b>${v.t}℃</b><b>${time}</b></div>
-  <div class="tip">${r[6]?'<span class="tag">途中で返す/ゆする</span>':''}${v.c?'<span class="tag">家庭設定</span>':''}${r[8]===1?'<span class="tag">実食記録</span>':r[8]===0?'<span class="tag">目安</span>':r[8]===2?'<span class="tag">自分で追加</span>':r[8]===3?'<span class="tag">実例</span>':''}${esc(r[7])}</div>
-  <div class="lk"><a href="${qurl(r)}" target="_blank" rel="noopener noreferrer">🔍 画像を見る</a></div></div>`}
+  <div class="tip">${r[6]?'<span class="tag">途中で返す/ゆする</span>':''}${v.c?'<span class="tag">家庭設定</span>':''}${r[8]===1?'<span class="tag">実食記録</span>':r[8]===0?'<span class="tag">目安</span>':r[8]===2?'<span class="tag">自分で追加</span>':r[8]===3?'<span class="tag">実例</span>':''}${esc(r[7])}</div></div>`}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function render(){
   const kw=qs.trim().toLowerCase();
@@ -226,12 +223,12 @@ $("#mk").onclick=e=>{if(e.target.id==="mk")closeEd()};
 $("#ad").onclick=()=>openEd(null);
 $("#so").onchange=e=>{so=e.target.value;render()};
 $("#bR").onclick=()=>{delete ov[cur];sv("ov",ov);closeEd();render()};
-$("#bD").onclick=()=>{if($("#bD").textContent!=="本当に削除"){$("#bD").textContent="本当に削除";return}$("#bD").textContent="削除";delete ph[cur];sv("ph",ph);cu=cu.filter(x=>x[0]!==cur);favs=favs.filter(x=>x!==cur);sv("cu",cu);sv("fav",favs);closeEd();render()};
+$("#bD").onclick=()=>{if($("#bD").textContent!=="本当に削除"){$("#bD").textContent="本当に削除";return}$("#bD").textContent="削除";delete ph[cur];sv("ph",ph);delete pv[cur];delete pq[cur];if(!pdel.includes(cur))pdel.push(cur);sv("pv",pv);sv("pdel",pdel);cu=cu.filter(x=>x[0]!==cur);favs=favs.filter(x=>x!==cur);sv("cu",cu);sv("fav",favs);closeEd();render()};
 $("#mk4").onclick=()=>$("#mk4").classList.remove("show");
 $("#pd").onclick=()=>{pend=null;showPv(null)};
 $("#pf").onchange=e=>{const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{
-    const k=Math.min(1,640/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    const k=Math.min(1,480/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
     c.getContext("2d").drawImage(im,0,0,c.width,c.height);pend=c.toDataURL("image/jpeg",.72);showPv(pend);$("#er").textContent=""};
     im.onerror=()=>{$("#er").textContent="この写真は読み込めませんでした"};im.src=rd.result};rd.readAsDataURL(f)};
 $("#bS").onclick=()=>{const t=+$("#iT").value,a=+$("#iA").value,b=+$("#iB").value||a;
@@ -244,7 +241,9 @@ $("#bS").onclick=()=>{const t=+$("#iT").value,a=+$("#iA").value,b=+$("#iB").valu
   else{ov[cur]={t:t,a:a,b:b};sv("ov",ov)}
   if(pend!==undefined){const old=ph[id];if(pend===null)delete ph[id];else ph[id]=pend;mem.ph=ph;let ok=true;
     try{localStorage.setItem("ph",JSON.stringify(ph))}catch(e){ok=false}
-    if(!ok){if(old)ph[id]=old;else delete ph[id];render();$("#er").textContent="食品は保存しましたが、写真は保存できませんでした（容量不足の可能性）。他の写真を削除してください";return}}
+    if(!ok){if(old)ph[id]=old;else delete ph[id];render();$("#er").textContent="食品は保存しましたが、写真は保存できませんでした（容量不足の可能性）。他の写真を削除してください";return}
+    if(pend===null){delete pv[id];delete pq[id];if(!pdel.includes(id))pdel.push(id)}else{pv[id]=Date.now();pq[id]=1;pdel=pdel.filter(x=>x!==id)}
+    sv("pv",pv);sv("pq",pq);sv("pdel",pdel)}
   closeEd();render()};
 const P="AFRY1:";
 function enc(){return P+btoa(unescape(encodeURIComponent(JSON.stringify({f:favs,o:ov,u:cu,c:cc}))))}
@@ -294,17 +293,28 @@ function apply(r){const before=st(snap());quiet=true;
   sv("ov",ov);sv("cu",cu);sv("cc",cc);quiet=false;
   if(before!==st(snap())){if(cat!=="all"&&cat!=="fav"&&!(cat in CN()))cat="all";tabs();
     if(!document.querySelector(".mask.show"))render()}}
+async function syncPh(){
+  const req=async(u,m,b)=>{const r=await fetch(FB+u,{method:m,headers:{"Content-Type":"application/json"},body:b===undefined?undefined:JSON.stringify(b)});if(!r.ok)throw r.status;return m==="GET"?await r.json():null};
+  let chg=false;const rv=(await req("/phv.json","GET"))||{};
+  for(const id in ph){if(pv[id]===undefined){pv[id]=Date.now();pq[id]=1}}
+  for(const id of pdel.slice()){if(id in rv){await req("/ph/"+id+".json","DELETE");await req("/phv/"+id+".json","DELETE");delete rv[id]}pdel=pdel.filter(x=>x!==id)}
+  for(const id of Object.keys(pq)){if(ph[id]){await req("/ph/"+id+".json","PUT",ph[id]);await req("/phv/"+id+".json","PUT",pv[id]);rv[id]=pv[id]}delete pq[id]}
+  for(const id in rv){if(!ph[id]||rv[id]>pv[id]){const d=await req("/ph/"+id+".json","GET");if(typeof d==="string"){ph[id]=d;pv[id]=rv[id];chg=true}}}
+  for(const id in ph){if(!(id in rv)){delete ph[id];delete pv[id];chg=true}}
+  quiet=true;sv("ph",ph);sv("pv",pv);sv("pq",pq);sv("pdel",pdel);quiet=false;
+  if(chg&&!document.querySelector(".mask.show"))render()}
 async function sync(){
   if(busy){again=true;return}busy=true;setSy("☁ 同期中…");
   try{
-    const g=await fetch(FB+".json");if(!g.ok)throw g.status;
-    const rem=await g.json()||{};rem.ov=rem.ov||{};rem.cu=rem.cu||{};rem.cc=rem.cc||{};
+    const gj=async p=>{const r=await fetch(FB+"/"+p+".json");if(!r.ok)throw r.status;return await r.json()||{}};
+    const [o1,c1,c2]=await Promise.all([gj("ov"),gj("cu"),gj("cc")]);const rem={ov:o1,cu:c1,cc:c2};
     if(last===null){let mig=false;try{mig=localStorage.getItem("fbmig")==="1"}catch(e){}
       if(!mig){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}})}else apply(rem);
       last=rem}
     else if(!Object.keys(diff(snap(),last)).length&&st(rem)!==st(last)){apply(rem);last=rem}
     const d=diff(snap(),last);
     if(Object.keys(d).length){const p=await fetch(FB+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!p.ok)throw p.status;last=snap()}
+    await syncPh();
     try{localStorage.setItem("fbmig","1")}catch(e){}
     setSy("☁ 共有OK","var(--ok)")
   }catch(e){setSy("☁ 共有できません（この端末のみ保存）","#e03131")}
