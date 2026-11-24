@@ -67,7 +67,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 </head>
 <body>
 <h1>🍟 ノンフライヤー早見表</h1>
-<p class="m">COSORI CAF-L501-KJP ・ 目安です。商品袋の表示があればそちらを優先 <span id="sy"></span></p>
+<p class="m">COSORI CAF-L501-KJP ・ 目安です。商品袋の表示があればそちらを優先 <span id="sy"></span> <span id="vr"></span></p>
 <input id="q" type="search" placeholder="食品名で検索（例：唐揚げ、ポテト）">
 <div class="tabs" id="tabs"></div>
 <div class="bar2"><select id="so"><option value="def">並び順：標準</option><option value="name">名前順（あいうえお）</option><option value="temp">温度が低い順</option><option value="temp2">温度が高い順</option><option value="time">時間が短い順</option><option value="time2">時間が長い順</option></select><button id="ad">＋ 食品を追加</button><button id="ac">＋ カテゴリー</button></div>
@@ -97,6 +97,8 @@ h1{font-size:19px;margin:6px 2px 2px}
 <div id="er"></div>
 <div class="bt"><button id="bR">初期値に戻す</button><button class="dl" id="bD">削除</button><button id="bC">閉じる</button><button class="ok" id="bS">保存</button></div></div></div>
 <button class="bk" id="bk">💾 バックアップ・家族と共有（書き出し／読み込み）</button>
+<button class="bk" id="dg" style="margin-top:8px">🛠 診断（共有がおかしいとき）</button>
+<textarea id="dgo" readonly style="display:none;width:100%;height:160px;margin-top:8px;font-size:11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)"></textarea>
 <div class="note">
 ・時間は<b>目安</b>です。機種・量・厚みで変わるので、最初は短めにして様子を見てください。<br>
 ・「途中で返す」「ゆする」は、時間の半分くらいで一度引き出しを出します。<br>
@@ -294,8 +296,8 @@ function apply(r){const before=st(snap());quiet=true;
   if(before!==st(snap())){if(cat!=="all"&&cat!=="fav"&&!(cat in CN()))cat="all";tabs();
     if(!document.querySelector(".mask.show"))render()}}
 async function syncPh(){
-  const req=async(u,m,b)=>{const r=await fetch(FB+u,{method:m,headers:{"Content-Type":"application/json"},body:b===undefined?undefined:JSON.stringify(b)});if(!r.ok)throw r.status;return m==="GET"?await r.json():null};
-  let chg=false;const rv=(await req("/phv.json","GET"))||{};
+  const req=async(u,m,b)=>{const r=await fetch(FB+u,{method:m,cache:"no-store",headers:{"Content-Type":"application/json"},body:b===undefined?undefined:JSON.stringify(b)});if(!r.ok)throw r.status;return m==="GET"?await r.json():null};
+  let chg=false;const rv=(await req("/phv.json?t="+Date.now(),"GET"))||{};
   for(const id in ph){if(pv[id]===undefined){pv[id]=Date.now();pq[id]=1}}
   for(const id of pdel.slice()){if(id in rv){await req("/ph/"+id+".json","DELETE");await req("/phv/"+id+".json","DELETE");delete rv[id]}pdel=pdel.filter(x=>x!==id)}
   for(const id of Object.keys(pq)){if(ph[id]){await req("/ph/"+id+".json","PUT",ph[id]);await req("/phv/"+id+".json","PUT",pv[id]);rv[id]=pv[id]}delete pq[id]}
@@ -307,18 +309,29 @@ const saveLast=()=>{try{localStorage.setItem("fblast",JSON.stringify(last))}catc
 async function sync(){
   if(busy){again=true;return}busy=true;setSy("☁ 同期中…");
   try{
-    const gj=async p=>{const r=await fetch(FB+"/"+p+".json");if(!r.ok)throw r.status;return await r.json()||{}};
+    const gj=async p=>{const r=await fetch(FB+"/"+p+".json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw r.status;return await r.json()||{}};
     const [o1,c1,c2]=await Promise.all([gj("ov"),gj("cu"),gj("cc")]);const rem={ov:o1,cu:c1,cc:c2};
     if(last===null){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}});last=rem}
     else if(!Object.keys(diff(snap(),last)).length&&st(rem)!==st(last)){apply(rem);last=rem}
     saveLast();
     const L=snap(),d=diff(L,last);
-    if(Object.keys(d).length){const p=await fetch(FB+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!p.ok)throw p.status;last=L;saveLast()}
+    let sent=0;
+    if(Object.keys(d).length){
+      const ks=Object.keys(d);
+      await Promise.all(ks.map(k=>fetch(FB+"/"+k+".json",{method:d[k]===null?"DELETE":"PUT",cache:"no-store",headers:{"Content-Type":"application/json"},body:d[k]===null?undefined:JSON.stringify(d[k])}).then(r=>{if(!r.ok)throw r.status})));
+      for(const k of ks){if(d[k]===null)continue;const r=await fetch(FB+"/"+k+".json?t="+Date.now(),{cache:"no-store"});const v=r.ok?await r.json():null;if(st(v)!==st(d[k]))throw "verify"}
+      last=L;saveLast();sent=ks.length}
     await syncPh();
-    setSy("☁ 共有OK","var(--ok)")
-  }catch(e){setSy(e===401||e===403?"☁ 書き込めません（Firebaseのルールを確認）。変更はこの端末に残っています":"☁ 共有できません（この端末のみ保存）","#e03131")}
+    setSy("☁ 共有OK "+new Date().toLocaleTimeString("ja-JP")+(sent?"（送信"+sent+"件）":""),"var(--ok)")
+  }catch(e){setSy(e===401||e===403?"☁ 書き込めません（Firebaseのルールを確認）。変更はこの端末に残っています":(e==="verify"?"☁ 書き込み結果が確認できません（変更はこの端末に残っています）":"☁ 共有できません（この端末のみ保存）"),"#e03131")}
   busy=false;if(again){again=false;setTimeout(sync,300)}
 }
+const VER="2026-11-24c";$("#vr").textContent="v"+VER;
+$("#dg").onclick=async()=>{const o=$("#dgo");o.style.display="block";o.value="診断中…";
+  let rem="取得できません",rp="";try{const r=await fetch(FB+"/ov.json?t="+Date.now(),{cache:"no-store"});rp=r.status;rem=JSON.stringify(await r.json())}catch(e){rem="エラー "+e}
+  let ls="OK";try{localStorage.setItem("t","1");localStorage.removeItem("t")}catch(e){ls="使えません"}
+  o.value=["版: "+VER,"端末保存: "+ls,"リモートov("+rp+"): "+rem,"ローカルov: "+JSON.stringify(ov),"前回同期ov: "+JSON.stringify(last&&last.ov),"未送信: "+Object.keys(diff(snap(),last||{ov:{},cu:{},cc:{}})).length+"件","UA: "+navigator.userAgent].join("\n");
+  o.focus();o.select()};
 setInterval(sync,15000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
 sync();
