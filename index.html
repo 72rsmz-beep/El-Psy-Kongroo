@@ -91,7 +91,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 <label>カテゴリー</label><select id="iC"><option value="gyomu">業務スーパー</option><option value="deli">惣菜</option><option value="frozen">冷凍食品</option><option value="meat">肉・魚</option></select></div>
 <div class="g"><div><label>温度（℃）</label><input id="iT" type="number" inputmode="numeric"></div></div>
 <div class="g"><div><label>最短（分）</label><input id="iA" type="number" inputmode="decimal"></div><div><label>最長（分）</label><input id="iB" type="number" inputmode="decimal"></div></div>
-<div id="ex2"><label>メモ</label><input id="iM" type="text" placeholder="例：油スプレーをかける">
+<div id="ex2"><label>メモ（作った感想・コツなど）</label><input id="iM" type="text" placeholder="例：油スプレーをかけて、7分でちょうどよかった">
 <label class="ck"><input id="iF" type="checkbox">途中で返す／ゆする</label></div>
 <div id="phs"><label>写真（商品の袋など）</label><label class="pb">📷 写真を撮る／選ぶ<input id="pf" type="file" accept="image/*" hidden></label><img id="pv" class="pvw" alt=""><button class="ph0" id="pd" type="button">写真を削除</button></div>
 <div id="er"></div>
@@ -180,7 +180,7 @@ function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}ca
 let quiet=false;
 function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"||k==="pq"||k==="pdel"))setTimeout(sync,300)}
 let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pv=ld("pv",{}),pq=ld("pq",{}),pdel=ld("pdel",[]),pend,so="def";const all=()=>D.concat(cu);
-const val=r=>{const o=ov[r[0]];return o?{t:o.t,a:o.a,b:o.b,c:1}:{t:r[3],a:r[4],b:r[5],c:0}};
+const val=r=>{const o=ov[r[0]];return o?{t:o.t,a:o.a,b:o.b,c:1,m:o.m!==undefined?o.m:r[7],f:o.f!==undefined?o.f:r[6]}:{t:r[3],a:r[4],b:r[5],c:0,m:r[7],f:r[6]}};
 function tabs(){$("#tabs").innerHTML=CATS.concat(cc).map(c=>`<button data-c="${c[0]}" class="${c[0]===cat?"on":""}">${c[1]}</button>`).join("")}
 const BC={gyomu:"業務スーパー",deli:"惣菜",frozen:"冷凍食品",meat:"肉・魚"};
 const ORD=()=>Object.keys(BC).concat(cc.map(c=>c[0])),CN=()=>Object.assign({},BC,Object.fromEntries(cc));
@@ -190,7 +190,7 @@ function card(r){const v=val(r),f=favs.includes(r[0]);
   const time=v.a===v.b?`${v.a}分`:`${v.a}〜${v.b}分`;
   return `<div class="card"><div class="top"><div class="tl">${pic(r[0])?`<img class="pi" data-p="${r[0]}" src="${pic(r[0])}" alt="">`:""}<div class="nm">${esc(r[2])}</div></div><div class="acts"><button class="ed" data-e="${r[0]}">✎</button><button class="fav ${f?"on":""}" data-f="${r[0]}">${f?"★":"☆"}</button></div></div>
   <div class="big"><b>${v.t}℃</b><b>${time}</b></div>
-  <div class="tip">${r[6]?'<span class="tag">途中で返す/ゆする</span>':''}${v.c?'<span class="tag">家庭設定</span>':''}${r[8]===1?'<span class="tag">実食記録</span>':r[8]===0?'<span class="tag">目安</span>':r[8]===2?'<span class="tag">自分で追加</span>':r[8]===3?'<span class="tag">実例</span>':''}${esc(r[7])}</div></div>`}
+  <div class="tip">${v.f?'<span class="tag">途中で返す/ゆする</span>':''}${v.c?'<span class="tag">家庭設定</span>':''}${r[8]===1?'<span class="tag">実食記録</span>':r[8]===0?'<span class="tag">目安</span>':r[8]===2?'<span class="tag">自分で追加</span>':r[8]===3?'<span class="tag">実例</span>':''}${esc(v.m)}</div></div>`}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function render(){
   const kw=qs.trim().toLowerCase();
@@ -213,9 +213,9 @@ function fillC(){$("#iC").innerHTML=Object.entries(CN()).map(([k,n])=>`<option v
 function showPv(u){$("#pv").style.display=u?"block":"none";$("#pd").style.display=u?"block":"none";if(u)$("#pv").src=u}
 function openEd(id){fillC();isNew=!id;pend=undefined;showPv(id?pic(id):null);$("#pf").value="";cur=id;const r=id?all().find(x=>x[0]===id):null,v=r?val(r):{t:180,a:5,b:8},cu_=r&&r[8]===2;
   $("#dn").textContent=isNew?"食品を追加":r[2];
-  $("#ex").style.display=$("#ex2").style.display=(isNew||cu_)?"block":"none";
+  $("#ex").style.display=(isNew||cu_)?"block":"none";$("#ex2").style.display="block";
   $("#bR").style.display=(!isNew&&!cu_)?"block":"none";$("#bD").style.display=cu_?"block":"none";
-  $("#iN").value=r&&cu_?r[2]:"";$("#iC").value=r?r[1]:(cat in CN()?cat:"gyomu");$("#iM").value=r&&cu_?r[7]:"";$("#iF").checked=r?!!r[6]:false;
+  $("#iN").value=r&&cu_?r[2]:"";$("#iC").value=r?r[1]:(cat in CN()?cat:"gyomu");$("#iM").value=r?(v.m||""):"";$("#iF").checked=r?!!v.f:false;
   $("#bD").textContent="削除";$("#iT").value=v.t;$("#iA").value=v.a;$("#iB").value=v.b;$("#er").textContent="";$("#mk").classList.add("show")}
 function closeEd(){$("#mk").classList.remove("show");cur=null}
 $("#bC").onclick=closeEd;
@@ -238,7 +238,7 @@ $("#bS").onclick=()=>{const t=+$("#iT").value,a=+$("#iA").value,b=+$("#iB").valu
     const it=[isNew?"u"+Date.now():cur,$("#iC").value,n,t,a,b,$("#iF").checked?1:0,$("#iM").value.trim(),2];id=it[0];
     if(isNew){cu.push(it);cat=it[1];tabs()}else{cu=cu.map(x=>x[0]===cur?it:x)}
     sv("cu",cu)}
-  else{ov[cur]={t:t,a:a,b:b};sv("ov",ov)}
+  else{ov[cur]={t:t,a:a,b:b,m:$("#iM").value.trim(),f:$("#iF").checked?1:0};sv("ov",ov)}
   if(pend!==undefined){const old=ph[id];if(pend===null)delete ph[id];else ph[id]=pend;mem.ph=ph;let ok=true;
     try{localStorage.setItem("ph",JSON.stringify(ph))}catch(e){ok=false}
     if(!ok){if(old)ph[id]=old;else delete ph[id];render();$("#er").textContent="食品は保存しましたが、写真は保存できませんでした（容量不足の可能性）。他の写真を削除してください";return}
@@ -278,7 +278,7 @@ tabs();render();
 
 // ---- Firebase 共有 ----
 const FB="https://airfryer-be7d1-default-rtdb.firebaseio.com/af";
-let last=null,busy=false,again=false;
+let last=ld("fblast",null),busy=false,again=false;
 const st=o=>JSON.stringify(o,(k,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);
 const snap=()=>({ov:JSON.parse(JSON.stringify(ov)),cu:Object.fromEntries(cu.map(x=>[x[0],{c:x[1],n:x[2],t:x[3],a:x[4],b:x[5],f:x[6]?1:0,m:x[7]||""}])),cc:Object.fromEntries(cc.map(c=>[c[0],c[1]]))});
 const setSy=(t,c)=>{const e=$("#sy");e.textContent=t;e.style.color=c||"var(--sub)"};
@@ -303,21 +303,20 @@ async function syncPh(){
   for(const id in ph){if(!(id in rv)){delete ph[id];delete pv[id];chg=true}}
   quiet=true;sv("ph",ph);sv("pv",pv);sv("pq",pq);sv("pdel",pdel);quiet=false;
   if(chg&&!document.querySelector(".mask.show"))render()}
+const saveLast=()=>{try{localStorage.setItem("fblast",JSON.stringify(last))}catch(x){}};
 async function sync(){
   if(busy){again=true;return}busy=true;setSy("☁ 同期中…");
   try{
     const gj=async p=>{const r=await fetch(FB+"/"+p+".json");if(!r.ok)throw r.status;return await r.json()||{}};
     const [o1,c1,c2]=await Promise.all([gj("ov"),gj("cu"),gj("cc")]);const rem={ov:o1,cu:c1,cc:c2};
-    if(last===null){let mig=false;try{mig=localStorage.getItem("fbmig")==="1"}catch(e){}
-      if(!mig){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}})}else apply(rem);
-      last=rem}
+    if(last===null){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}});last=rem}
     else if(!Object.keys(diff(snap(),last)).length&&st(rem)!==st(last)){apply(rem);last=rem}
-    const d=diff(snap(),last);
-    if(Object.keys(d).length){const p=await fetch(FB+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!p.ok)throw p.status;last=snap()}
+    saveLast();
+    const L=snap(),d=diff(L,last);
+    if(Object.keys(d).length){const p=await fetch(FB+".json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});if(!p.ok)throw p.status;last=L;saveLast()}
     await syncPh();
-    try{localStorage.setItem("fbmig","1")}catch(e){}
     setSy("☁ 共有OK","var(--ok)")
-  }catch(e){setSy("☁ 共有できません（この端末のみ保存）","#e03131")}
+  }catch(e){setSy(e===401||e===403?"☁ 書き込めません（Firebaseのルールを確認）。変更はこの端末に残っています":"☁ 共有できません（この端末のみ保存）","#e03131")}
   busy=false;if(again){again=false;setTimeout(sync,300)}
 }
 setInterval(sync,15000);
