@@ -348,11 +348,12 @@ async function sync(){
   }catch(e){setSy(e===401||e===403?"☁ 書き込めません（Firebaseのルールを確認）。変更はこの端末に残っています":(e==="verify"?"☁ 書き込み結果が確認できません（変更はこの端末に残っています）":"☁ 共有できません（この端末のみ保存）"),"#e03131")}
   busy=false;if(again){again=false;setTimeout(sync,300)}
 }
-const VER="2026-11-24d";$("#vr").textContent="v"+VER;
+const VER="2026-11-25a";$("#vr").textContent="v"+VER;
 $("#dg").onclick=async()=>{const o=$("#dgo");o.style.display="block";o.value="診断中…";
   let rem="取得できません",rp="";try{const r=await fetch(FB+"/ov.json?t="+Date.now(),{cache:"no-store"});rp=r.status;rem=JSON.stringify(await r.json())}catch(e){rem="エラー "+e}
+  let hrem="取得できません";try{const r=await fetch(FB+"/hid.json?t="+Date.now(),{cache:"no-store"});hrem="("+r.status+") "+JSON.stringify(await r.json())}catch(e){hrem="エラー "+e}
   let ls="OK";try{localStorage.setItem("t","1");localStorage.removeItem("t")}catch(e){ls="使えません"}
-  o.value=["版: "+VER,"端末保存: "+ls,"リモートov("+rp+"): "+rem,"ローカルov: "+JSON.stringify(ov),"前回同期ov: "+JSON.stringify(last&&last.ov),"未送信: "+Object.keys(diff(snap(),last||{ov:{},cu:{},cc:{}})).length+"件","UA: "+navigator.userAgent].join("\n");
+  o.value=["版: "+VER,"端末保存: "+ls,"リモートov("+rp+"): "+rem,"ローカルov: "+JSON.stringify(ov),"ローカル削除(hid): "+JSON.stringify(hid),"リモート削除(hid): "+hrem,"前回同期ov: "+JSON.stringify(last&&last.ov),"未送信: "+Object.keys(diff(snap(),last||{ov:{},cu:{},cc:{}})).length+"件","UA: "+navigator.userAgent].join("\n");
   o.focus();o.select()};
 setInterval(sync,15000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
