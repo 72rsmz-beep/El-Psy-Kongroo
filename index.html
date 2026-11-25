@@ -63,6 +63,8 @@ h1{font-size:19px;margin:6px 2px 2px}
 .pvw{display:none;width:100%;max-height:160px;object-fit:contain;border-radius:10px;margin-top:8px;background:var(--bg)}
 #big{max-width:100%;max-height:85vh;border-radius:12px}
 .dlg .ph0{display:none;width:100%;margin-top:6px;padding:9px;font-size:13px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
+#mk5{z-index:12}
+#tl div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd);font-size:14px}#tl button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:8px;padding:6px 10px;font-size:13px;flex:none}
 </style>
 </head>
 <body>
@@ -72,6 +74,12 @@ h1{font-size:19px;margin:6px 2px 2px}
 <div class="tabs" id="tabs"></div>
 <div class="bar2"><select id="so"><option value="def">並び順：標準</option><option value="name">名前順（あいうえお）</option><option value="temp">温度が低い順</option><option value="temp2">温度が高い順</option><option value="time">時間が短い順</option><option value="time2">時間が長い順</option></select><button id="ad">＋ 食品を追加</button><button id="ac">＋ カテゴリー</button></div>
 <div id="list"></div>
+<div class="mask" id="mk5"><div class="dlg"><h2>カードを削除しますか？</h2>
+<div class="tip" id="cm" style="margin-bottom:6px"></div>
+<div class="bt"><button id="bN">キャンセル</button><button class="ok" id="bY" style="background:#e03131;border-color:#e03131">削除する</button></div></div></div>
+<div class="mask" id="mk6"><div class="dlg"><h2>削除したカードを戻す</h2>
+<div class="tip">もともとあるカードを、元に戻せます。自分で追加したカードは、削除すると戻せません。</div>
+<div id="tl"></div><div class="bt"><button id="bC6">閉じる</button></div></div></div>
 <div class="mask" id="mk4"><img id="big" alt=""></div>
 <div class="mask" id="mk3"><div class="dlg"><h2>バックアップ・家族と共有</h2>
 <h3>① 書き出し</h3><div class="tip">下の文字列をコピーして、LINEやメモに貼っておきます。</div>
@@ -97,6 +105,7 @@ h1{font-size:19px;margin:6px 2px 2px}
 <div id="er"></div>
 <div class="bt"><button id="bR">初期値に戻す</button><button class="dl" id="bD">削除</button><button id="bC">閉じる</button><button class="ok" id="bS">保存</button></div></div></div>
 <button class="bk" id="bk">💾 バックアップ・家族と共有（書き出し／読み込み）</button>
+<button class="bk" id="rs" style="margin-top:8px">🗑 削除したカードを戻す</button>
 <button class="bk" id="dg" style="margin-top:8px">🛠 診断（共有がおかしいとき）</button>
 <textarea id="dgo" readonly style="display:none;width:100%;height:160px;margin-top:8px;font-size:11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)"></textarea>
 <div class="note">
@@ -180,8 +189,8 @@ let cat="all",qs="",mem={};
 const $=s=>document.querySelector(s);
 function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return mem[k]!==undefined?mem[k]:d}}
 let quiet=false;
-function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"||k==="pq"||k==="pdel"))setTimeout(sync,300)}
-let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pv=ld("pv",{}),pq=ld("pq",{}),pdel=ld("pdel",[]),pend,so="def";const all=()=>D.concat(cu);
+function sv(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(!quiet&&(k==="ov"||k==="cu"||k==="cc"||k==="hid"||k==="pq"||k==="pdel"))setTimeout(sync,300)}
+let favs=ld("fav",[]),ov=ld("ov",{}),cu=ld("cu",[]),cc=ld("cc",[]),ph=ld("ph",{}),pv=ld("pv",{}),pq=ld("pq",{}),pdel=ld("pdel",[]),hid=ld("hid",{}),pend,so="def";const all=()=>D.concat(cu).filter(r=>!hid[r[0]]);
 const val=r=>{const o=ov[r[0]];return o?{t:o.t,a:o.a,b:o.b,c:1,m:o.m!==undefined?o.m:r[7],f:o.f!==undefined?o.f:r[6]}:{t:r[3],a:r[4],b:r[5],c:0,m:r[7],f:r[6]}};
 function tabs(){$("#tabs").innerHTML=CATS.concat(cc).map(c=>`<button data-c="${c[0]}" class="${c[0]===cat?"on":""}">${c[1]}</button>`).join("")}
 const BC={gyomu:"業務スーパー",deli:"惣菜",frozen:"冷凍食品",meat:"肉・魚"};
@@ -216,7 +225,7 @@ function showPv(u){$("#pv").style.display=u?"block":"none";$("#pd").style.displa
 function openEd(id){fillC();isNew=!id;pend=undefined;showPv(id?pic(id):null);$("#pf").value="";cur=id;const r=id?all().find(x=>x[0]===id):null,v=r?val(r):{t:180,a:5,b:8},cu_=r&&r[8]===2;
   $("#dn").textContent=isNew?"食品を追加":r[2];
   $("#ex").style.display=(isNew||cu_)?"block":"none";$("#ex2").style.display="block";
-  $("#bR").style.display=(!isNew&&!cu_)?"block":"none";$("#bD").style.display=cu_?"block":"none";
+  $("#bR").style.display=(!isNew&&!cu_)?"block":"none";$("#bD").style.display=isNew?"none":"block";
   $("#iN").value=r&&cu_?r[2]:"";$("#iC").value=r?r[1]:(cat in CN()?cat:"gyomu");$("#iM").value=r?(v.m||""):"";$("#iF").checked=r?!!v.f:false;
   $("#bD").textContent="削除";$("#iT").value=v.t;$("#iA").value=v.a;$("#iB").value=v.b;$("#er").textContent="";$("#mk").classList.add("show")}
 function closeEd(){$("#mk").classList.remove("show");cur=null}
@@ -225,7 +234,19 @@ $("#mk").onclick=e=>{if(e.target.id==="mk")closeEd()};
 $("#ad").onclick=()=>openEd(null);
 $("#so").onchange=e=>{so=e.target.value;render()};
 $("#bR").onclick=()=>{delete ov[cur];sv("ov",ov);closeEd();render()};
-$("#bD").onclick=()=>{if($("#bD").textContent!=="本当に削除"){$("#bD").textContent="本当に削除";return}$("#bD").textContent="削除";delete ph[cur];sv("ph",ph);delete pv[cur];delete pq[cur];if(!pdel.includes(cur))pdel.push(cur);sv("pv",pv);sv("pdel",pdel);cu=cu.filter(x=>x[0]!==cur);favs=favs.filter(x=>x!==cur);sv("cu",cu);sv("fav",favs);closeEd();render()};
+$("#bD").onclick=()=>{const r=all().find(x=>x[0]===cur);if(!r)return;
+  $("#cm").textContent="「"+r[2]+"」を削除します。"+(r[8]===2?"自分で追加したカードは、削除すると戻せません。":"あとから「削除したカードを戻す」で戻せます。")+"家族の端末からも消えます。";
+  $("#mk5").classList.add("show")};
+$("#bN").onclick=()=>$("#mk5").classList.remove("show");
+$("#bY").onclick=()=>{const id=cur,r=all().find(x=>x[0]===id);$("#mk5").classList.remove("show");if(!r)return;
+  if(r[8]===2){delete ph[id];sv("ph",ph);delete pv[id];delete pq[id];if(!pdel.includes(id))pdel.push(id);sv("pv",pv);sv("pdel",pdel);cu=cu.filter(x=>x[0]!==id);sv("cu",cu)}
+  else{hid[id]=1;sv("hid",hid)}
+  favs=favs.filter(x=>x!==id);sv("fav",favs);closeEd();render()};
+function rsList(){const hs=D.filter(r=>hid[r[0]]);$("#tl").innerHTML=hs.length?hs.map(r=>`<div><span>${esc(r[2])}</span><button data-r="${r[0]}">戻す</button></div>`).join(""):'<div style="color:var(--sub)">削除したカードはありません</div>'}
+$("#rs").onclick=()=>{rsList();$("#mk6").classList.add("show")};
+$("#bC6").onclick=()=>$("#mk6").classList.remove("show");
+$("#mk6").onclick=e=>{if(e.target.id==="mk6")$("#mk6").classList.remove("show")};
+$("#tl").onclick=e=>{const id=e.target.dataset.r;if(!id)return;delete hid[id];sv("hid",hid);rsList();render()};
 $("#mk4").onclick=()=>$("#mk4").classList.remove("show");
 $("#pd").onclick=()=>{pend=null;showPv(null)};
 $("#pf").onchange=e=>{const f=e.target.files[0];if(!f)return;
@@ -282,9 +303,9 @@ tabs();render();
 const FB="https://airfryer-be7d1-default-rtdb.firebaseio.com/af";
 let last=ld("fblast",null),busy=false,again=false;
 const st=o=>JSON.stringify(o,(k,v)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(x=>[x,v[x]])):v);
-const snap=()=>({ov:JSON.parse(JSON.stringify(ov)),cu:Object.fromEntries(cu.map(x=>[x[0],{c:x[1],n:x[2],t:x[3],a:x[4],b:x[5],f:x[6]?1:0,m:x[7]||""}])),cc:Object.fromEntries(cc.map(c=>[c[0],c[1]]))});
+const snap=()=>({ov:JSON.parse(JSON.stringify(ov)),cu:Object.fromEntries(cu.map(x=>[x[0],{c:x[1],n:x[2],t:x[3],a:x[4],b:x[5],f:x[6]?1:0,m:x[7]||""}])),cc:Object.fromEntries(cc.map(c=>[c[0],c[1]])),hid:JSON.parse(JSON.stringify(hid))});
 const setSy=(t,c)=>{const e=$("#sy");e.textContent=t;e.style.color=c||"var(--sub)"};
-function diff(a,b){const o={};for(const k of["ov","cu","cc"]){const x=a[k]||{},y=b[k]||{};
+function diff(a,b){const o={};for(const k of["ov","cu","cc","hid"]){const x=a[k]||{},y=b[k]||{};
   for(const id in x){if(st(x[id])!==st(y[id]))o[k+"/"+id]=x[id]}
   for(const id in y){if(!(id in x))o[k+"/"+id]=null}}return o}
 const byId=(p,q)=>(parseInt(p[0].slice(1))||0)-(parseInt(q[0].slice(1))||0);
@@ -292,7 +313,8 @@ function apply(r){const before=st(snap());quiet=true;
   ov=r.ov||{};
   cu=Object.entries(r.cu||{}).sort(byId).map(([k,o])=>[k,o.c,o.n,o.t,o.a,o.b,o.f?1:0,o.m||"",2]);
   cc=Object.entries(r.cc||{}).sort(byId).map(([k,n])=>[k,n]);
-  sv("ov",ov);sv("cu",cu);sv("cc",cc);quiet=false;
+  hid=r.hid||{};
+  sv("ov",ov);sv("cu",cu);sv("cc",cc);sv("hid",hid);quiet=false;
   if(before!==st(snap())){if(cat!=="all"&&cat!=="fav"&&!(cat in CN()))cat="all";tabs();
     if(!document.querySelector(".mask.show"))render()}}
 async function syncPh(){
@@ -310,8 +332,8 @@ async function sync(){
   if(busy){again=true;return}busy=true;setSy("☁ 同期中…");
   try{
     const gj=async p=>{const r=await fetch(FB+"/"+p+".json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw r.status;return await r.json()||{}};
-    const [o1,c1,c2]=await Promise.all([gj("ov"),gj("cu"),gj("cc")]);const rem={ov:o1,cu:c1,cc:c2};
-    if(last===null){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc}});last=rem}
+    const [o1,c1,c2,h1]=await Promise.all([gj("ov"),gj("cu"),gj("cc"),gj("hid")]);const rem={ov:o1,cu:c1,cc:c2,hid:h1};
+    if(last===null){const L=snap();apply({ov:{...rem.ov,...L.ov},cu:{...rem.cu,...L.cu},cc:{...rem.cc,...L.cc},hid:{...rem.hid,...L.hid}});last=rem}
     else if(!Object.keys(diff(snap(),last)).length&&st(rem)!==st(last)){apply(rem);last=rem}
     saveLast();
     const L=snap(),d=diff(L,last);
@@ -326,7 +348,7 @@ async function sync(){
   }catch(e){setSy(e===401||e===403?"☁ 書き込めません（Firebaseのルールを確認）。変更はこの端末に残っています":(e==="verify"?"☁ 書き込み結果が確認できません（変更はこの端末に残っています）":"☁ 共有できません（この端末のみ保存）"),"#e03131")}
   busy=false;if(again){again=false;setTimeout(sync,300)}
 }
-const VER="2026-11-24c";$("#vr").textContent="v"+VER;
+const VER="2026-11-24d";$("#vr").textContent="v"+VER;
 $("#dg").onclick=async()=>{const o=$("#dgo");o.style.display="block";o.value="診断中…";
   let rem="取得できません",rp="";try{const r=await fetch(FB+"/ov.json?t="+Date.now(),{cache:"no-store"});rp=r.status;rem=JSON.stringify(await r.json())}catch(e){rem="エラー "+e}
   let ls="OK";try{localStorage.setItem("t","1");localStorage.removeItem("t")}catch(e){ls="使えません"}
